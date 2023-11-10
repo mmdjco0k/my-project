@@ -122,6 +122,9 @@ def login():
                 return render_template("pages/alert.html")
     else:
         return render_template("pages/alert.html")
+@app.route("/mail-sender")
+def mail_sender():
+    pass
 
 @app.route("/frg-psw")
 def forget_psw():
