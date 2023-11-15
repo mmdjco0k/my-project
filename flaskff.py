@@ -1,13 +1,21 @@
 from flask import Flask , redirect , render_template , request , session , url_for
+from flask_mail import Message , Mail
 import mysql.connector
 import hashlib
-from email.message import EmailMessage
-import ssl
-import smtplib
 import random
 
 app = Flask(__name__)
 app.secret_key="2077"
+
+mail=Mail(app)
+
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'mohamadrezamehrabimoghadam@gmail.com'
+app.config['MAIL_PASSWORD'] = "mbvf aizn wwfd djyp"
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
 
 mydb = mysql.connector.connect(
 host = "127.0.0.1",
@@ -17,39 +25,16 @@ database = "login_page"
 )
 
 cursor = mydb.cursor()
-print(mydb)
-
-def reset_password(email_recever):
-    def generate_password():
-        length = 8
-        characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+"
-        password = ""
-        for i in range(length):
-            password += random.choice(characters)
-        print("Your generated password is:", password)
-        return password
-
-    new_passw = generate_password()
 
 
-    email_sender = "mohamadrezamehrabimoghadam@gmail.com"
-    passw = "mbvf aizn wwfd djyp"
-    subject = "your new password"
-    body = f"""your new password is 
-    `{new_passw}`"""
-
-    em = EmailMessage()
-    em["From"] = email_sender
-    em["To"] = email_recever
-    em["Subject"] = subject
-    em.set_content(body)
-
-    context = ssl.create_default_context()
-
-    with smtplib.SMTP_SSL("smtp.gmail.com",465,context=context) as smtp :
-        smtp.login(email_sender,passw)
-        smtp.sendmail(email_sender,email_recever,em.as_string())
-    return new_passw
+def new_password():
+    length = 8
+    characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+"
+    password = ""
+    for i in range(length):
+        password += random.choice(characters)
+    print("Your generated password is:", password)
+    return password
 
 @app.route("/")
 def main():
@@ -63,7 +48,6 @@ def lo():
 
 @app.route("/signup/" , methods = ["POST"])
 def signup():
-    
     u = hashlib.sha256()
     p = hashlib.sha256()
     
@@ -110,7 +94,6 @@ def login():
     cursor.execute(f"SELECT * FROM user_pass where users = %s and Pass = %s ",(usr,pw))
     result = cursor.fetchall() 
     l = len(result)   
-    print(l)
     if l == 1:
         for i in result:
             if i[1] == pw:
@@ -122,34 +105,31 @@ def login():
                 return render_template("pages/alert.html")
     else:
         return render_template("pages/alert.html")
-@app.route("/mail-sender")
-def mail_sender():
-    pass
 
 @app.route("/frg-psw")
 def forget_psw():
     return render_template("pages/forget.html")
 
-@app.route("/forget",methods = ["POST"])
+@app.route("/reset-password",methods = ["POST"])
 def forget_password():    
     if request.method == "POST":
         username = request.form["usr"]
         email = request.form["gmail"]
     u = hashlib.sha256()
     p = hashlib.sha256()
+    
     u.update(username.encode())
     usr = u.hexdigest()
     
     cursor = mydb.cursor()
     cursor.execute(f"SELECT * FROM user_pass where users = %s and Email = %s ;",(usr,email))
     result = cursor.fetchall()
-    print(result)
     l = len(result)
     if l ==  1:
         for i in result :
             if i[2] == email:
-                new_password = reset_password(email)
-                p.update(new_password.encode())
+                newp = new_password()
+                p.update(newp.encode())
                 pw = p.hexdigest()
                 cursor2 = mydb.cursor()
                 
@@ -157,11 +137,13 @@ def forget_password():
                 sqlFurmola1 = (pw,email ,usr)
                 cursor2.execute(sqlFurmola,sqlFurmola1)
                 mydb.commit()
+                msg = Message('new password', sender = 'mohamadrezamehrabimoghadam@gmail.com', recipients = [email])
+                msg.subject = "New Password"
+                msg.body = f"your new password is :{newp}"
+                mail.send(msg)
                 return render_template("pages/login.html")
     else : 
         return render_template("pages/forget-alert.html")
-
-    
 
 @app.route("/logout")
 def logout():
