@@ -117,10 +117,8 @@ def forget_password():
         email = request.form["gmail"]
     u = hashlib.sha256()
     p = hashlib.sha256()
-    
     u.update(username.encode())
     usr = u.hexdigest()
-    
     cursor = mydb.cursor()
     cursor.execute(f"SELECT * FROM user_pass where users = %s and Email = %s ;",(usr,email))
     result = cursor.fetchall()
