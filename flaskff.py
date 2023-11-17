@@ -50,7 +50,6 @@ def lo():
 def signup():
     u = hashlib.sha256()
     p = hashlib.sha256()
-    
     cursor = mydb.cursor()
     if request.method == "POST":
         user = request.form['username']
@@ -58,18 +57,39 @@ def signup():
         gmail = request.form["gmail"]
         u.update(user.encode())
         p.update(password.encode())
-
-        if password != "" and len(password)>=8:
-            usr = u.hexdigest()
-            pw = p.hexdigest()
-            
-            sqlFurmola = "INSERT INTO user_pass ( users , Pass , Email) VALUES (%s , %s , %s)"
-            sqlFurmola1 = (usr,pw,gmail)
-            cursor.execute(sqlFurmola , sqlFurmola1)
-            mydb.commit()
-            return  redirect(url_for('main'))
+        usr = u.hexdigest()
+        pw = p.hexdigest()
+        cursor.execute(f"SELECT * FROM user_pass" )
+        result = cursor.fetchall()
+        l = len (result)
+        if l > 0:
+            for i in result :
+                if i[0] == usr :
+                    length = 1
+                else :
+                    length = 0
+            if length == 0:
+                if password != "" and len(password)>=8:
+                    cursor = mydb.cursor()   
+                    sqlFurmola = "INSERT INTO user_pass ( users , Pass , Email) VALUES (%s,%s,%s)"
+                    sqlFurmola1 = (usr,pw,gmail)
+                    cursor.execute(sqlFurmola , sqlFurmola1)
+                    mydb.commit()
+                    return  redirect(url_for('main'))
+                else :
+                    return  render_template("pages/signup-alert.html")
+            else :
+                return  render_template("pages/signup-alert-usr.html")
         else :
-            return render_template("pages/signup-alert.html")
+            if password != "" and len(password)>=8:
+                    cursor = mydb.cursor()   
+                    sqlFurmola = "INSERT INTO user_pass ( users , Pass , Email) VALUES (%s,%s,%s)"
+                    sqlFurmola1 = (usr,pw,gmail)
+                    cursor.execute(sqlFurmola , sqlFurmola1)
+                    mydb.commit()
+                    return  redirect(url_for('main'))
+            else :
+                    return render_template("pages/signup-alert.html")
 
 @app.route("/ll")
 def ll():

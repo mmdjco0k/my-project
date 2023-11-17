@@ -19,10 +19,13 @@ cursor = mydb.cursor()
 # pas = input("pasord:")
 
 l = []
-cursor.execute(f"SELECT * FROM user_pass" )
+# cursor.execute(f"SELECT * FROM user_pass" )
+cursor.execute(f"SELECT * FROM user_pass")
 result = cursor.fetchall()
 print(result)
+print(len(result))
 for i in result:
+    print(i[0])
     print(i)
 
 
